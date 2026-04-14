@@ -18,14 +18,24 @@ class ResConfigSettings(models.TransientModel):
     def set_values(self):
         super().set_values()
         icp = self.env["ir.config_parameter"].sudo()
-        icp.set_param("sid_purchase_transport_group.transport_service_product_id", self.transport_service_product_id.id or False)
-        icp.set_param("sid_purchase_transport_group.transport_supplier_id", self.transport_supplier_id.id or False)
+        icp.set_param(
+            "sid_purchase_transport_group.transport_service_product_id",
+            self.transport_service_product_id.id or False,
+        )
+        icp.set_param(
+            "sid_purchase_transport_group.transport_supplier_id",
+            self.transport_supplier_id.id or False,
+        )
 
     def get_values(self):
         res = super().get_values()
         icp = self.env["ir.config_parameter"].sudo()
         res.update(
-            transport_service_product_id=int(icp.get_param("sid_purchase_transport_group.transport_service_product_id") or 0),
-            transport_supplier_id=int(icp.get_param("sid_purchase_transport_group.transport_supplier_id") or 0),
+            transport_service_product_id=int(
+                icp.get_param("sid_purchase_transport_group.transport_service_product_id") or 0
+            ),
+            transport_supplier_id=int(
+                icp.get_param("sid_purchase_transport_group.transport_supplier_id") or 0
+            ),
         )
         return res

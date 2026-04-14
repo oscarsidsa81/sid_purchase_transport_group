@@ -12,4 +12,13 @@
             </xpath>
         </field>
     </record>
+
+    <record id="action_purchase_transport_group_wizard" model="ir.actions.act_window">
+        <field name="name">Crear agrupación transporte</field>
+        <field name="res_model">purchase.transport.group.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="binding_view_types">list</field>
+    </record>
 </odoo>
