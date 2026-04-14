@@ -1,0 +1,12 @@
+<odoo>
+    <record id="group_purchase_transport_user" model="res.groups">
+        <field name="name">Purchase Transport User</field>
+        <field name="category_id" ref="base.module_category_purchase_management"/>
+    </record>
+
+    <record id="group_purchase_transport_manager" model="res.groups">
+        <field name="name">Purchase Transport Manager</field>
+        <field name="category_id" ref="base.module_category_purchase_management"/>
+        <field name="implied_ids" eval="[(4, ref('sid_purchase_transport_group.group_purchase_transport_user'))]"/>
+    </record>
+</odoo>
