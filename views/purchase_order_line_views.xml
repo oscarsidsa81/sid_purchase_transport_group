@@ -1,1 +1,24 @@
-<odoo></odoo>
+<odoo>
+    <record id="action_purchase_transport_group_wizard" model="ir.actions.act_window">
+        <field name="name">Crear agrupación transporte</field>
+        <field name="res_model">purchase.transport.group.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <record id="view_purchase_order_line_tree_transport_inherit" model="ir.ui.view">
+        <field name="name">purchase.order.line.tree.transport.inherit</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <field name="transport_hold" optional="hide"/>
+                <field name="transport_state" optional="show"/>
+                <field name="qty_transport_assigned" optional="show"/>
+                <field name="qty_transport_available" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

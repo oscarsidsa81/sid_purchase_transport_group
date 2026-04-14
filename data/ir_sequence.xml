@@ -1,9 +1,9 @@
-
 <odoo>
     <record id="seq_purchase_transport_group" model="ir.sequence">
         <field name="name">Purchase Transport Group</field>
         <field name="code">purchase.transport.group</field>
-        <field name="prefix">PTG/</field>
+        <field name="prefix">PTG/%(year)s/</field>
         <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
     </record>
 </odoo>
