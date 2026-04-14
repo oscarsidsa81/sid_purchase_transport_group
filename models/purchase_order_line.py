@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 
 
 class PurchaseOrderLine(models.Model):
@@ -36,6 +36,14 @@ class PurchaseOrderLine(models.Model):
         compute="_compute_transport_qtys",
         store=True,
         digits="Product Unit of Measure",
+    )
+    transport_group_count = fields.Integer(
+        string="Nº agrupaciones",
+        compute="_compute_transport_group_info",
+    )
+    transport_group_summary = fields.Char(
+        string="Agrupaciones transporte",
+        compute="_compute_transport_group_info",
     )
 
     @api.depends(
@@ -76,3 +84,29 @@ class PurchaseOrderLine(models.Model):
                 line.transport_state = "partial"
             else:
                 line.transport_state = "grouped"
+
+    @api.depends(
+        "transport_group_line_ids.qty_assigned",
+        "transport_group_line_ids.line_state",
+        "transport_group_line_ids.group_id.state",
+        "transport_group_line_ids.group_id.name",
+    )
+    def _compute_transport_group_info(self):
+        for line in self:
+            valid_lines = line.transport_group_line_ids.filtered(
+                lambda gl: gl.line_state != "cancel" and gl.group_id.state != "cancel"
+            )
+            line.transport_group_count = len(valid_lines)
+            line.transport_group_summary = " | ".join(
+                "%s (%.2f)" % (gl.group_id.name, gl.qty_assigned)
+                for gl in valid_lines
+            )
+
+    def action_view_transport_group_lines(self):
+        self.ensure_one()
+        action = self.env.ref("sid_purchase_transport_group.action_purchase_transport_group_line").read()[0]
+        action["domain"] = [("purchase_line_id", "=", self.id)]
+        action["context"] = {
+            "default_purchase_line_id": self.id,
+        }
+        return action

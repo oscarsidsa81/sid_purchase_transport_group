@@ -70,9 +70,33 @@
         </field>
     </record>
 
+    <record id="view_purchase_transport_group_line_tree" model="ir.ui.view">
+        <field name="name">purchase.transport.group.line.tree</field>
+        <field name="model">purchase.transport.group.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="group_id"/>
+                <field name="purchase_order_id"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="qty_po"/>
+                <field name="qty_assigned"/>
+                <field name="qty_done"/>
+                <field name="line_state"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="action_purchase_transport_group" model="ir.actions.act_window">
         <field name="name">Agrupaciones transporte</field>
         <field name="res_model">purchase.transport.group</field>
+        <field name="view_mode">tree,form</field>
+        <field name="groups_id" eval="[(4, ref('sid_purchase_transport_group.group_purchase_transport_user'))]"/>
+    </record>
+
+    <record id="action_purchase_transport_group_line" model="ir.actions.act_window">
+        <field name="name">Líneas agrupación transporte</field>
+        <field name="res_model">purchase.transport.group.line</field>
         <field name="view_mode">tree,form</field>
         <field name="groups_id" eval="[(4, ref('sid_purchase_transport_group.group_purchase_transport_user'))]"/>
     </record>

@@ -49,19 +49,67 @@ class PurchaseTransportGroupWizard(models.TransientModel):
         res["line_ids"] = line_vals
         return res
 
+    def _build_no_available_message(self):
+        details = []
+        for wl in self.line_ids:
+            pol = wl.purchase_line_id
+            reasons = []
+            if pol.transport_hold:
+                reasons.append(_("retenida"))
+            if pol.transport_state == "grouped":
+                reasons.append(_("agrupada completamente"))
+            if pol.transport_state == "done":
+                reasons.append(_("finalizada"))
+            groups = pol.transport_group_line_ids.filtered(
+                lambda g: g.line_state != "cancel" and g.group_id.state != "cancel"
+            )
+            group_txt = ", ".join("%s (%.2f)" % (g.group_id.name, g.qty_assigned) for g in groups) or _("sin agrupaciones activas")
+            details.append(
+                "- %s / %s | disponible=%s | estado=%s | agrupaciones=%s%s" % (
+                    pol.order_id.name or "-",
+                    (pol.product_id.display_name or pol.name or "").strip(),
+                    wl.qty_available,
+                    pol.transport_state or "-",
+                    group_txt,
+                    (" | motivo=%s" % ", ".join(reasons)) if reasons else "",
+                )
+            )
+        return _("No hay líneas con cantidad a asignar.\n\n%s") % "\n".join(details[:20])
+
     def action_create_group(self):
         self.ensure_one()
         selected_lines = self.line_ids.filtered(lambda l: l.qty_to_assign > 0)
         if not selected_lines:
-            raise UserError(_("No hay líneas con cantidad a asignar."))
+            raise UserError(self._build_no_available_message())
 
+        errors = []
         for line in selected_lines:
-            if line.purchase_line_id.transport_hold:
-                raise ValidationError(
-                    _("La línea %s está retenida para transporte.") % line.purchase_line_id.display_name
+            pol = line.purchase_line_id
+            if pol.transport_hold:
+                errors.append(
+                    "- %s / %s -> %s" % (
+                        pol.order_id.name or "-",
+                        pol.product_id.display_name or pol.name or "-",
+                        _("línea retenida para transporte"),
+                    )
                 )
-            if line.qty_to_assign > line.qty_available:
-                raise ValidationError(_("La cantidad a asignar no puede superar la disponible."))
+            elif line.qty_to_assign > line.qty_available:
+                groups = pol.transport_group_summary or _("sin agrupaciones")
+                errors.append(
+                    "- %s / %s -> %s: %s, %s: %s, %s: %s" % (
+                        pol.order_id.name or "-",
+                        pol.product_id.display_name or pol.name or "-",
+                        _("disponible"),
+                        line.qty_available,
+                        _("solicitado"),
+                        line.qty_to_assign,
+                        _("agrupaciones"),
+                        groups,
+                    )
+                )
+
+        if errors:
+            raise ValidationError(_("No se puede crear la agrupación:\n\n%s") % "\n".join(errors[:20]))
 
         if self.group_mode == "existing":
             if not self.group_id:
@@ -94,50 +142,13 @@ class PurchaseTransportGroupWizardLine(models.TransientModel):
     _name = "purchase.transport.group.wizard.line"
     _description = "Wizard línea agrupación transporte"
 
-    wizard_id = fields.Many2one(
-        "purchase.transport.group.wizard",
-        required=True,
-        ondelete="cascade",
-    )
-    purchase_line_id = fields.Many2one(
-        "purchase.order.line",
-        string="Línea de compra",
-        required=True,
-    )
-    purchase_order_id = fields.Many2one(
-        "purchase.order",
-        related="purchase_line_id.order_id",
-        readonly=True,
-        string="Pedido",
-    )
-    product_id = fields.Many2one(
-        "product.product",
-        related="purchase_line_id.product_id",
-        readonly=True,
-        string="Producto",
-    )
-    name = fields.Text(
-        related="purchase_line_id.name",
-        readonly=True,
-        string="Descripción",
-    )
-    product_uom = fields.Many2one(
-        "uom.uom",
-        related="purchase_line_id.product_uom",
-        readonly=True,
-        string="UdM",
-    )
-    qty_available = fields.Float(
-        string="Disponible",
-        digits="Product Unit of Measure",
-        readonly=True,
-    )
-    qty_to_assign = fields.Float(
-        string="Cantidad a agrupar",
-        digits="Product Unit of Measure",
-    )
-    transport_state = fields.Selection(
-        related="purchase_line_id.transport_state",
-        readonly=True,
-        string="Estado transporte",
-    )
+    wizard_id = fields.Many2one("purchase.transport.group.wizard", required=True, ondelete="cascade")
+    purchase_line_id = fields.Many2one("purchase.order.line", string="Línea de compra", required=True)
+    purchase_order_id = fields.Many2one("purchase.order", related="purchase_line_id.order_id", readonly=True, string="Pedido")
+    product_id = fields.Many2one("product.product", related="purchase_line_id.product_id", readonly=True, string="Producto")
+    name = fields.Text(related="purchase_line_id.name", readonly=True, string="Descripción")
+    product_uom = fields.Many2one("uom.uom", related="purchase_line_id.product_uom", readonly=True, string="UdM")
+    qty_available = fields.Float(string="Disponible", digits="Product Unit of Measure", readonly=True)
+    qty_to_assign = fields.Float(string="Cantidad a agrupar", digits="Product Unit of Measure")
+    transport_state = fields.Selection(related="purchase_line_id.transport_state", readonly=True, string="Estado transporte")
+    transport_group_summary = fields.Char(related="purchase_line_id.transport_group_summary", readonly=True, string="Agrupaciones")

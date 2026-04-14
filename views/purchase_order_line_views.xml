@@ -9,6 +9,36 @@
                 <field name="transport_state" optional="show"/>
                 <field name="qty_transport_assigned" optional="show"/>
                 <field name="qty_transport_available" optional="show"/>
+                <field name="transport_group_summary" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_order_line_form_transport_inherit" model="ir.ui.view">
+        <field name="name">purchase.order.line.form.transport.inherit</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="oe_button_box" name="button_box">
+                    <button type="object"
+                            name="action_view_transport_group_lines"
+                            class="oe_stat_button"
+                            icon="fa-truck">
+                        <field name="transport_group_count" string="Agrupaciones" widget="statinfo"/>
+                    </button>
+                </div>
+                <group string="Transporte">
+                    <group>
+                        <field name="transport_hold"/>
+                        <field name="transport_state"/>
+                    </group>
+                    <group>
+                        <field name="qty_transport_assigned" readonly="1"/>
+                        <field name="qty_transport_available" readonly="1"/>
+                    </group>
+                    <field name="transport_group_summary" readonly="1"/>
+                </group>
             </xpath>
         </field>
     </record>
