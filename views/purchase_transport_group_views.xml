@@ -1,0 +1,13 @@
+
+<odoo>
+    <record id="view_group_tree" model="ir.ui.view">
+        <field name="name">group.tree</field>
+        <field name="model">purchase.transport.group</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+</odoo>
