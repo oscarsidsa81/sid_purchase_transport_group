@@ -75,7 +75,7 @@
         <field name="name">Agrupaciones transporte</field>
         <field name="res_model">purchase.transport.group</field>
         <field name="view_mode">tree,form</field>
-        <field name="groups_id" eval="[(4, ref('sid_purchase_transport_group_v2.group_purchase_transport_user'))]"/>
+        <field name="groups_id" eval="[(4, ref('sid_purchase_transport_group.group_purchase_transport_user'))]"/>
     </record>
 
     <menuitem id="menu_purchase_transport_group_root"
@@ -83,5 +83,5 @@
               parent="purchase.menu_purchase_root"
               action="action_purchase_transport_group"
               sequence="65"
-              groups="sid_purchase_transport_group_v2.group_purchase_transport_user"/>
+              groups="sid_purchase_transport_group.group_purchase_transport_user"/>
 </odoo>
