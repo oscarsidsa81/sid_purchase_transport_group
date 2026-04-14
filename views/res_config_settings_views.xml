@@ -4,24 +4,34 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@id='purchase_order']" position="after">
-                <div class="app_settings_block" data-string="Purchase Transport Group" string="Purchase Transport Group">
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <div class="app_settings_block"
+                     data-string="Purchase Transport Group"
+                     string="Purchase Transport Group">
                     <h2>Agrupaciones de transporte</h2>
                     <div class="row mt16 o_settings_container">
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane"/>
                             <div class="o_setting_right_pane">
                                 <label for="transport_service_product_id"/>
-                                <div class="text-muted">Producto de compra que se usará al generar la RFQ de transporte.</div>
-                                <div class="content-group"><field name="transport_service_product_id"/></div>
+                                <div class="text-muted">
+                                    Producto de compra que se usará al generar la RFQ de transporte.
+                                </div>
+                                <div class="content-group">
+                                    <field name="transport_service_product_id"/>
+                                </div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane"/>
                             <div class="o_setting_right_pane">
                                 <label for="transport_supplier_id"/>
-                                <div class="text-muted">Proveedor por defecto para la RFQ de transporte.</div>
-                                <div class="content-group"><field name="transport_supplier_id"/></div>
+                                <div class="text-muted">
+                                    Proveedor por defecto para la RFQ de transporte.
+                                </div>
+                                <div class="content-group">
+                                    <field name="transport_supplier_id"/>
+                                </div>
                             </div>
                         </div>
                     </div>
