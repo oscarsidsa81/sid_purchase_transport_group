@@ -13,9 +13,7 @@
                             <div class="o_setting_right_pane">
                                 <label for="transport_service_product_id"/>
                                 <div class="text-muted">Producto de compra que se usará al generar la RFQ de transporte.</div>
-                                <div class="content-group">
-                                    <field name="transport_service_product_id"/>
-                                </div>
+                                <div class="content-group"><field name="transport_service_product_id"/></div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box">
@@ -23,9 +21,7 @@
                             <div class="o_setting_right_pane">
                                 <label for="transport_supplier_id"/>
                                 <div class="text-muted">Proveedor por defecto para la RFQ de transporte.</div>
-                                <div class="content-group">
-                                    <field name="transport_supplier_id"/>
-                                </div>
+                                <div class="content-group"><field name="transport_supplier_id"/></div>
                             </div>
                         </div>
                     </div>

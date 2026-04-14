@@ -28,9 +28,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,done,cancel"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
                     <group>
                         <group>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -41,11 +39,11 @@
                             <field name="line_count" readonly="1"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Líneas">
                             <field name="line_ids">
                                 <tree editable="bottom">
+                                    <field name="purchase_line_id"/>
                                     <field name="purchase_order_id" readonly="1"/>
                                     <field name="partner_id" readonly="1"/>
                                     <field name="product_id" readonly="1"/>
@@ -57,7 +55,6 @@
                                     <field name="qty_done"/>
                                     <field name="line_state"/>
                                     <field name="purchase_transport_state" readonly="1"/>
-                                    <field name="purchase_line_id"/>
                                 </tree>
                             </field>
                         </page>
