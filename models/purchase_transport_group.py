@@ -77,6 +77,13 @@ class PurchaseTransportGroup(models.Model):
             "target": "current",
         }
 
+    def action_view_lines(self):
+        self.ensure_one()
+        action = self.env.ref("sid_purchase_transport_group.action_purchase_transport_group_line").read()[0]
+        action["domain"] = [("group_id", "=", self.id)]
+        action["context"] = {"default_group_id": self.id}
+        return action
+
     def action_create_transport_purchase(self):
         self.ensure_one()
         if self.transport_purchase_id:

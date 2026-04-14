@@ -43,7 +43,6 @@ class PurchaseTransportGroupWizard(models.TransientModel):
                 continue
             line_vals.append((0, 0, {
                 "purchase_line_id": line.id,
-                "qty_available": line.qty_transport_available,
                 "qty_to_assign": line.qty_transport_available,
             }))
         res["line_ids"] = line_vals
@@ -53,6 +52,7 @@ class PurchaseTransportGroupWizard(models.TransientModel):
         details = []
         for wl in self.line_ids:
             pol = wl.purchase_line_id
+            real_available = pol.qty_transport_available
             reasons = []
             if pol.transport_hold:
                 reasons.append(_("retenida"))
@@ -68,7 +68,7 @@ class PurchaseTransportGroupWizard(models.TransientModel):
                 "- %s / %s | disponible=%s | estado=%s | agrupaciones=%s%s" % (
                     pol.order_id.name or "-",
                     (pol.product_id.display_name or pol.name or "").strip(),
-                    wl.qty_available,
+                    real_available,
                     pol.transport_state or "-",
                     group_txt,
                     (" | motivo=%s" % ", ".join(reasons)) if reasons else "",
@@ -85,6 +85,7 @@ class PurchaseTransportGroupWizard(models.TransientModel):
         errors = []
         for line in selected_lines:
             pol = line.purchase_line_id
+            real_available = pol.qty_transport_available
             if pol.transport_hold:
                 errors.append(
                     "- %s / %s -> %s" % (
@@ -93,14 +94,14 @@ class PurchaseTransportGroupWizard(models.TransientModel):
                         _("línea retenida para transporte"),
                     )
                 )
-            elif line.qty_to_assign > line.qty_available:
+            elif line.qty_to_assign > real_available:
                 groups = pol.transport_group_summary or _("sin agrupaciones")
                 errors.append(
                     "- %s / %s -> %s: %s, %s: %s, %s: %s" % (
                         pol.order_id.name or "-",
                         pol.product_id.display_name or pol.name or "-",
                         _("disponible"),
-                        line.qty_available,
+                        real_available,
                         _("solicitado"),
                         line.qty_to_assign,
                         _("agrupaciones"),
@@ -121,9 +122,21 @@ class PurchaseTransportGroupWizard(models.TransientModel):
             })
 
         for wiz_line in selected_lines:
+            pol = wiz_line.purchase_line_id
+            real_available = pol.qty_transport_available
+            if wiz_line.qty_to_assign > real_available:
+                raise ValidationError(_(
+                    "La línea %s del pedido %s ya no tiene disponible suficiente. Disponible actual: %s, solicitado: %s"
+                ) % (
+                    pol.product_id.display_name or pol.name or "-",
+                    pol.order_id.name or "-",
+                    real_available,
+                    wiz_line.qty_to_assign,
+                ))
+
             self.env["purchase.transport.group.line"].create({
                 "group_id": group.id,
-                "purchase_line_id": wiz_line.purchase_line_id.id,
+                "purchase_line_id": pol.id,
                 "qty_assigned": wiz_line.qty_to_assign,
                 "line_state": "included",
             })
@@ -148,7 +161,12 @@ class PurchaseTransportGroupWizardLine(models.TransientModel):
     product_id = fields.Many2one("product.product", related="purchase_line_id.product_id", readonly=True, string="Producto")
     name = fields.Text(related="purchase_line_id.name", readonly=True, string="Descripción")
     product_uom = fields.Many2one("uom.uom", related="purchase_line_id.product_uom", readonly=True, string="UdM")
-    qty_available = fields.Float(string="Disponible", digits="Product Unit of Measure", readonly=True)
+    qty_available = fields.Float(
+        string="Disponible",
+        related="purchase_line_id.qty_transport_available",
+        readonly=True,
+        digits="Product Unit of Measure",
+    )
     qty_to_assign = fields.Float(string="Cantidad a agrupar", digits="Product Unit of Measure")
     transport_state = fields.Selection(related="purchase_line_id.transport_state", readonly=True, string="Estado transporte")
     transport_group_summary = fields.Char(related="purchase_line_id.transport_group_summary", readonly=True, string="Agrupaciones")

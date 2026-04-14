@@ -5,11 +5,11 @@
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/tree/field[@name='price_unit']" position="after">
-                <field name="transport_hold" optional="hide"/>
-                <field name="transport_state" optional="show"/>
-                <field name="qty_transport_assigned" optional="show"/>
-                <field name="qty_transport_available" optional="show"/>
-                <field name="transport_group_summary" optional="show"/>
+                <field name="transport_hold"/>
+                <field name="transport_state" widget="badge"/>
+                <field name="qty_transport_assigned"/>
+                <field name="qty_transport_available"/>
+                <field name="transport_group_summary" string="Agrupaciones"/>
             </xpath>
         </field>
     </record>
@@ -31,12 +31,13 @@
                 <group string="Transporte">
                     <group>
                         <field name="transport_hold"/>
-                        <field name="transport_state"/>
+                        <field name="transport_state" widget="badge"/>
                     </group>
                     <group>
                         <field name="qty_transport_assigned" readonly="1"/>
                         <field name="qty_transport_available" readonly="1"/>
                     </group>
+                    <field name="transport_group_ids" widget="many2many_tags" readonly="1"/>
                     <field name="transport_group_summary" readonly="1"/>
                 </group>
             </xpath>

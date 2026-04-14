@@ -31,14 +31,19 @@
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object"
+                                name="action_view_lines"
+                                class="oe_stat_button"
+                                icon="fa-list">
+                            <field name="line_count" string="Líneas" widget="statinfo"/>
+                        </button>
+                    </div>
                     <group>
                         <group>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="carrier_partner_id"/>
                             <field name="transport_purchase_id" readonly="1"/>
-                        </group>
-                        <group>
-                            <field name="line_count" readonly="1"/>
                         </group>
                     </group>
                     <notebook>

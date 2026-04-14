@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 
 
 class PurchaseOrderLine(models.Model):
@@ -43,6 +43,11 @@ class PurchaseOrderLine(models.Model):
     )
     transport_group_summary = fields.Char(
         string="Agrupaciones transporte",
+        compute="_compute_transport_group_info",
+    )
+    transport_group_ids = fields.Many2many(
+        "purchase.transport.group",
+        string="Agrupaciones",
         compute="_compute_transport_group_info",
     )
 
@@ -96,7 +101,9 @@ class PurchaseOrderLine(models.Model):
             valid_lines = line.transport_group_line_ids.filtered(
                 lambda gl: gl.line_state != "cancel" and gl.group_id.state != "cancel"
             )
-            line.transport_group_count = len(valid_lines)
+            group_ids = valid_lines.mapped("group_id")
+            line.transport_group_count = len(group_ids)
+            line.transport_group_ids = [(6, 0, group_ids.ids)]
             line.transport_group_summary = " | ".join(
                 "%s (%.2f)" % (gl.group_id.name, gl.qty_assigned)
                 for gl in valid_lines
@@ -106,7 +113,5 @@ class PurchaseOrderLine(models.Model):
         self.ensure_one()
         action = self.env.ref("sid_purchase_transport_group.action_purchase_transport_group_line").read()[0]
         action["domain"] = [("purchase_line_id", "=", self.id)]
-        action["context"] = {
-            "default_purchase_line_id": self.id,
-        }
+        action["context"] = {"default_purchase_line_id": self.id}
         return action

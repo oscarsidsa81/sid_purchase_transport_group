@@ -12,11 +12,11 @@
                            attrs="{'invisible': [('group_mode', '=', 'existing')]}"/>
                 </group>
                 <field name="line_ids" nolabel="1">
-                    <tree>
+                    <tree editable="bottom">
                         <field name="purchase_order_id" readonly="1"/>
                         <field name="product_id" readonly="1"/>
                         <field name="name" readonly="1"/>
-                        <field name="transport_state" readonly="1"/>
+                        <field name="transport_state" widget="badge" readonly="1"/>
                         <field name="qty_available" readonly="1"/>
                         <field name="qty_to_assign"/>
                         <field name="transport_group_summary" readonly="1"/>

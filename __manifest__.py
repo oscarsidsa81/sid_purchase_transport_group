@@ -1,6 +1,6 @@
 {
     "name": "Purchase Transport Group",
-    "version": "15.0.4.0.0",
+    "version": "15.0.5.0.0",
     "summary": "Agrupa lineas de compra para transporte y genera RFQ de transporte",
     "category": "Purchases",
     "author": "OpenAI",
