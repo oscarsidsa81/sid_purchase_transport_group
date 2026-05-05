@@ -28,30 +28,61 @@ class PurchaseTransportGroup(models.Model):
     transport_type_id = fields.Many2one("purchase.transport.packing.type", string="Tipo transporte")
     capacity_weight_kg = fields.Float(string="Capacidad peso (kg)")
     capacity_volume_m3 = fields.Float(string="Capacidad volumen (m³)")
+    ref_length_cm = fields.Float(related="transport_type_id.ref_length_cm", readonly=True, string="Largo ref. (cm)")
+    ref_width_cm = fields.Float(related="transport_type_id.ref_width_cm", readonly=True, string="Ancho ref. (cm)")
+    ref_height_cm = fields.Float(related="transport_type_id.ref_height_cm", readonly=True, string="Alto ref. (cm)")
     occupancy_weight_pct = fields.Float(string="Ocupación peso %", compute="_compute_occupancy")
     occupancy_volume_pct = fields.Float(string="Ocupación volumen %", compute="_compute_occupancy")
+    occupancy_max_pct = fields.Float(string="Ocupación total %", compute="_compute_occupancy")
 
     @api.depends("line_ids")
     def _compute_line_count(self):
         for rec in self:
             rec.line_count = len(rec.line_ids)
 
-    @api.depends("line_ids.purchase_order_id", "line_ids.name", "line_ids.qty_assigned", "line_ids.line_state")
+    @api.depends(
+        "packing_line_ids.purchase_order_id",
+        "packing_line_ids.purchase_order_id.partner_id",
+        "packing_line_ids.description",
+        "packing_line_ids.package_count",
+        "packing_line_ids.weight_kg",
+        "packing_line_ids.volume_m3",
+    )
     def _compute_note_summary(self):
         for group in self:
-            po_map = OrderedDict()
-            for line in group.line_ids.filtered(lambda l: l.line_state != "cancel"):
-                po_name = line.purchase_order_id.name or _("Sin pedido")
-                po_map.setdefault(po_name, OrderedDict())
-                desc = (line.name or "").strip()
-                po_map[po_name].setdefault(desc, 0.0)
-                po_map[po_name][desc] += line.qty_assigned
+            supplier_map = OrderedDict()
+            for line in group.packing_line_ids:
+                po = line.purchase_order_id
+                if not po:
+                    continue
+                supplier = po.partner_id
+                contact = po.partner_id.child_ids.filtered(lambda c: c.type == "delivery")[:1] or po.partner_id
+                key = (supplier.id, contact.id)
+                supplier_map.setdefault(key, {
+                    "supplier_name": supplier.display_name or _("Sin proveedor"),
+                    "address": contact.contact_address or _("Sin dirección"),
+                    "packing_map": OrderedDict(),
+                })
+                po_name = po.name or _("Sin pedido")
+                supplier_map[key]["packing_map"].setdefault(po_name, [])
+                supplier_map[key]["packing_map"][po_name].append(
+                    "%s | %s | %s bultos | %.2f kg | %.3f m³" % (
+                        line.description or _("Sin descripción"),
+                        _("PO %s") % po_name,
+                        line.package_count,
+                        line.weight_kg,
+                        line.volume_m3,
+                    )
+                )
             blocks = []
-            for po_name, desc_map in po_map.items():
-                blocks.append(po_name)
-                for desc, qty in desc_map.items():
-                    if desc:
-                        blocks.append("- %s: %s" % (desc, qty))
+            for info in supplier_map.values():
+                blocks.append(info["supplier_name"])
+                blocks.append(_("- Dirección recogida: %s") % info["address"])
+                blocks.append(_("- Resumen packing list asociado:"))
+                for po_name, pack_lines in info["packing_map"].items():
+                    blocks.append("  • %s" % po_name)
+                    for pack_line in pack_lines:
+                        blocks.append("    - %s" % pack_line)
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
 
@@ -66,8 +97,9 @@ class PurchaseTransportGroup(models.Model):
     @api.depends("total_weight_kg", "total_volume_m3", "capacity_weight_kg", "capacity_volume_m3")
     def _compute_occupancy(self):
         for rec in self:
-            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg * 100.0) if rec.capacity_weight_kg else 0.0
-            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3 * 100.0) if rec.capacity_volume_m3 else 0.0
+            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg) if rec.capacity_weight_kg else 0.0
+            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3) if rec.capacity_volume_m3 else 0.0
+            rec.occupancy_max_pct = max(rec.occupancy_weight_pct, rec.occupancy_volume_pct)
 
     @api.onchange("transport_type_id")
     def _onchange_transport_type_id(self):
