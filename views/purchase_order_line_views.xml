@@ -4,6 +4,11 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object" name="action_view_transport_packing_lines" class="oe_stat_button" icon="fa-cubes">
+                    <field name="transport_packing_count" string="Packing" widget="statinfo"/>
+                </button>
+            </xpath>
             <xpath expr="//field[@name='order_line']/tree/field[@name='price_unit']" position="after">
                 <field name="transport_hold"/>
                 <field name="transport_state" widget="badge"/>
@@ -21,10 +26,7 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
                 <div class="oe_button_box" name="button_box">
-                    <button type="object"
-                            name="action_view_transport_group_lines"
-                            class="oe_stat_button"
-                            icon="fa-truck">
+                    <button type="object" name="action_view_transport_group_lines" class="oe_stat_button" icon="fa-truck">
                         <field name="transport_group_count" string="Agrupaciones" widget="statinfo"/>
                     </button>
                 </div>
