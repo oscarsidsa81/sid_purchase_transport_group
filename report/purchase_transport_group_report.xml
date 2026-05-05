@@ -1,0 +1,35 @@
+<odoo>
+    <record id="action_report_transport_group_packing" model="ir.actions.report">
+        <field name="name">Packing consolidado</field>
+        <field name="model">purchase.transport.group</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sid_purchase_transport_group.report_transport_group_packing</field>
+        <field name="report_file">sid_purchase_transport_group.report_transport_group_packing</field>
+        <field name="print_report_name">'Packing-' + object.name</field>
+    </record>
+
+    <template id="report_transport_group_packing">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Packing consolidado <span t-esc="o.name"/></h2>
+                        <p>Peso total: <span t-esc="o.total_weight_kg"/> kg | Volumen total: <span t-esc="o.total_volume_m3"/> m³</p>
+                        <table class="table table-sm o_main_table">
+                            <thead><tr><th>Compra</th><th>Descripción</th><th>Bultos</th><th>Peso kg</th><th>Volumen m³</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="o.packing_line_ids" t-as="p">
+                                    <td><span t-esc="p.purchase_order_id.name"/></td>
+                                    <td><span t-esc="p.description"/></td>
+                                    <td><span t-esc="p.package_count"/></td>
+                                    <td><span t-esc="p.weight_kg"/></td>
+                                    <td><span t-esc="p.volume_m3"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
