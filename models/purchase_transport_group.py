@@ -22,6 +22,9 @@ class PurchaseTransportGroup(models.Model):
     line_count = fields.Integer(string="Nº líneas", compute="_compute_line_count")
     note_summary = fields.Text(string="Resumen", compute="_compute_note_summary", store=True)
     packing_line_ids = fields.One2many("purchase.transport.packing.line", "group_id", string="Packing list")
+    available_purchase_order_ids = fields.Many2many(
+        "purchase.order", compute="_compute_available_purchase_order_ids", string="Pedidos compra disponibles"
+    )
     packing_count = fields.Integer(string="Nº packings", compute="_compute_packing_totals")
     total_weight_kg = fields.Float(string="Peso total (kg)", compute="_compute_packing_totals", store=True)
     total_volume_m3 = fields.Float(string="Volumen total (m³)", compute="_compute_packing_totals", store=True)
@@ -73,6 +76,12 @@ class PurchaseTransportGroup(models.Model):
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
 
+
+
+    @api.depends("line_ids.purchase_order_id")
+    def _compute_available_purchase_order_ids(self):
+        for rec in self:
+            rec.available_purchase_order_ids = rec.line_ids.mapped("purchase_order_id")
 
     @api.depends("packing_line_ids.weight_kg", "packing_line_ids.volume_m3")
     def _compute_packing_totals(self):
