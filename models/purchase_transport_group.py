@@ -40,22 +40,23 @@ class PurchaseTransportGroup(models.Model):
         for rec in self:
             rec.line_count = len(rec.line_ids)
 
-    @api.depends("line_ids.purchase_order_id", "line_ids.name", "line_ids.qty_assigned", "line_ids.line_state")
+    @api.depends("line_ids.purchase_order_id", "line_ids.purchase_order_id.partner_id", "line_ids.line_state")
     def _compute_note_summary(self):
         for group in self:
             po_map = OrderedDict()
             for line in group.line_ids.filtered(lambda l: l.line_state != "cancel"):
-                po_name = line.purchase_order_id.name or _("Sin pedido")
-                po_map.setdefault(po_name, OrderedDict())
-                desc = (line.name or "").strip()
-                po_map[po_name].setdefault(desc, 0.0)
-                po_map[po_name][desc] += line.qty_assigned
+                po = line.purchase_order_id
+                po_name = po.name or _("Sin pedido")
+                contact = po.partner_id.child_ids.filtered(lambda c: c.type == "delivery")[:1] or po.partner_id
+                po_map.setdefault(po_name, {
+                    "contact_name": contact.name or po.partner_id.name or _("Sin contacto"),
+                    "address": contact.contact_address or _("Sin dirección"),
+                })
             blocks = []
-            for po_name, desc_map in po_map.items():
+            for po_name, info in po_map.items():
                 blocks.append(po_name)
-                for desc, qty in desc_map.items():
-                    if desc:
-                        blocks.append("- %s: %s" % (desc, qty))
+                blocks.append(_("- Recogida: %s") % info["contact_name"])
+                blocks.append(_("- Dirección: %s") % info["address"])
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
 
