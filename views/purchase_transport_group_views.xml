@@ -83,7 +83,8 @@
                         <page string="Packing list">
                             <field name="packing_line_ids" attrs="{'readonly': [('state', '!=', 'draft')]}">
                                 <tree editable="bottom">
-                                    <field name="purchase_order_id" domain="[('id','in',parent.available_purchase_order_ids)]"/>
+                                    <field name="available_purchase_order_ids" invisible="1"/>
+                                    <field name="purchase_order_id" domain="[('id','in',available_purchase_order_ids)]"/>
                                     <field name="description"/>
                                     <field name="package_count"/>
                                     <field name="length_cm"/>

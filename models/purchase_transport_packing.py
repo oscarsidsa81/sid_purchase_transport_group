@@ -26,6 +26,7 @@ class PurchaseTransportPackingLine(models.Model):
 
     group_id = fields.Many2one("purchase.transport.group", required=True, ondelete="cascade", string="Agrupación")
     purchase_order_id = fields.Many2one("purchase.order", required=True, string="Pedido compra")
+    available_purchase_order_ids = fields.Many2many("purchase.order", compute="_compute_available_purchase_order_ids")
     description = fields.Char(string="Descripción", required=True)
     package_count = fields.Integer(string="Nº bultos", default=1, required=True)
     length_cm = fields.Float(string="Largo (cm)", required=True)
@@ -34,6 +35,12 @@ class PurchaseTransportPackingLine(models.Model):
     weight_kg = fields.Float(string="Peso (kg)", required=True)
     volume_m3 = fields.Float(string="Volumen (m³)", compute="_compute_volume_m3", store=True)
     company_id = fields.Many2one(related="group_id.company_id", store=True, readonly=True)
+
+
+    @api.depends("group_id", "group_id.line_ids.purchase_order_id")
+    def _compute_available_purchase_order_ids(self):
+        for rec in self:
+            rec.available_purchase_order_ids = rec.group_id.line_ids.mapped("purchase_order_id")
 
     @api.depends("package_count", "length_cm", "width_cm", "height_cm")
     def _compute_volume_m3(self):
