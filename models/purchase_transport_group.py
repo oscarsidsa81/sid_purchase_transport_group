@@ -43,22 +43,36 @@ class PurchaseTransportGroup(models.Model):
         for rec in self:
             rec.line_count = len(rec.line_ids)
 
-    @api.depends("line_ids.purchase_order_id", "line_ids.name", "line_ids.qty_assigned", "line_ids.line_state")
+    @api.depends(
+        "line_ids.purchase_order_id",
+        "line_ids.purchase_order_id.partner_id",
+        "line_ids.purchase_line_id",
+        "line_ids.qty_assigned",
+        "line_ids.line_state",
+    )
     def _compute_note_summary(self):
         for group in self:
-            po_map = OrderedDict()
+            supplier_map = OrderedDict()
             for line in group.line_ids.filtered(lambda l: l.line_state != "cancel"):
-                po_name = line.purchase_order_id.name or _("Sin pedido")
-                po_map.setdefault(po_name, OrderedDict())
-                desc = (line.name or "").strip()
-                po_map[po_name].setdefault(desc, 0.0)
-                po_map[po_name][desc] += line.qty_assigned
+                po = line.purchase_order_id
+                supplier = po.partner_id
+                contact = po.partner_id.child_ids.filtered(lambda c: c.type == "delivery")[:1] or po.partner_id
+                key = (supplier.id, contact.id)
+                supplier_map.setdefault(key, {
+                    "supplier_name": supplier.display_name or _("Sin proveedor"),
+                    "address": contact.contact_address or _("Sin dirección"),
+                    "pl_map": OrderedDict(),
+                })
+                pl_name = line.purchase_line_id.display_name or line.name or _("Sin PL")
+                supplier_map[key]["pl_map"].setdefault(pl_name, 0.0)
+                supplier_map[key]["pl_map"][pl_name] += line.qty_assigned
             blocks = []
-            for po_name, desc_map in po_map.items():
-                blocks.append(po_name)
-                for desc, qty in desc_map.items():
-                    if desc:
-                        blocks.append("- %s: %s" % (desc, qty))
+            for info in supplier_map.values():
+                blocks.append(info["supplier_name"])
+                blocks.append(_("- Dirección recogida: %s") % info["address"])
+                blocks.append(_("- Resumen PL asociados:"))
+                for pl_name, qty in info["pl_map"].items():
+                    blocks.append("  • %s: %s" % (pl_name, qty))
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
 
@@ -79,8 +93,8 @@ class PurchaseTransportGroup(models.Model):
     @api.depends("total_weight_kg", "total_volume_m3", "capacity_weight_kg", "capacity_volume_m3")
     def _compute_occupancy(self):
         for rec in self:
-            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg * 100.0) if rec.capacity_weight_kg else 0.0
-            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3 * 100.0) if rec.capacity_volume_m3 else 0.0
+            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg) if rec.capacity_weight_kg else 0.0
+            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3) if rec.capacity_volume_m3 else 0.0
             rec.occupancy_max_pct = max(rec.occupancy_weight_pct, rec.occupancy_volume_pct)
 
     @api.onchange("transport_type_id")
