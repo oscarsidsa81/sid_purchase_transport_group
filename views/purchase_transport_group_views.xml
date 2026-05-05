@@ -53,12 +53,16 @@
                             <field name="transport_type_id"/>
                             <field name="capacity_weight_kg"/>
                             <field name="capacity_volume_m3"/>
+                            <field name="ref_length_cm" readonly="1"/>
+                            <field name="ref_width_cm" readonly="1"/>
+                            <field name="ref_height_cm" readonly="1"/>
                         </group>
                         <group>
                             <field name="total_weight_kg" readonly="1"/>
                             <field name="total_volume_m3" readonly="1"/>
-                            <field name="occupancy_weight_pct" readonly="1"/>
-                            <field name="occupancy_volume_pct" readonly="1"/>
+                            <field name="occupancy_weight_pct" widget="percentage" readonly="1"/>
+                            <field name="occupancy_volume_pct" widget="percentage" readonly="1"/>
+                            <field name="occupancy_max_pct" widget="percentage" readonly="1"/>
                         </group>
                     </group>
                     <notebook>
@@ -83,7 +87,8 @@
                         <page string="Packing list">
                             <field name="packing_line_ids" attrs="{'readonly': [('state', '!=', 'draft')]}">
                                 <tree editable="bottom">
-                                    <field name="purchase_order_id" domain="[('id','in',parent.line_ids.purchase_order_id)]"/>
+                                    <field name="available_purchase_order_ids" invisible="1"/>
+                                    <field name="purchase_order_id" domain="[('id','in',available_purchase_order_ids)]"/>
                                     <field name="description"/>
                                     <field name="package_count"/>
                                     <field name="length_cm"/>
@@ -100,7 +105,11 @@
                         </page>
                     </notebook>
                 </sheet>
-                <chatter/>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
