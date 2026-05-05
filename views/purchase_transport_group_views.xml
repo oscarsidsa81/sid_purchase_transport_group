@@ -111,7 +111,7 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="group_id"/>
-                <field name="purchase_order_id"/>
+                <field name="purchase_order_id" options="{'no_create': True}"/>
                 <field name="partner_id"/>
                 <field name="product_id"/>
                 <field name="qty_po"/>
