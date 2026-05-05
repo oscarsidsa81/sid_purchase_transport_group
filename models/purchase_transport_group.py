@@ -28,8 +28,12 @@ class PurchaseTransportGroup(models.Model):
     transport_type_id = fields.Many2one("purchase.transport.packing.type", string="Tipo transporte")
     capacity_weight_kg = fields.Float(string="Capacidad peso (kg)")
     capacity_volume_m3 = fields.Float(string="Capacidad volumen (m³)")
+    ref_length_cm = fields.Float(related="transport_type_id.ref_length_cm", readonly=True, string="Largo ref. (cm)")
+    ref_width_cm = fields.Float(related="transport_type_id.ref_width_cm", readonly=True, string="Ancho ref. (cm)")
+    ref_height_cm = fields.Float(related="transport_type_id.ref_height_cm", readonly=True, string="Alto ref. (cm)")
     occupancy_weight_pct = fields.Float(string="Ocupación peso %", compute="_compute_occupancy")
     occupancy_volume_pct = fields.Float(string="Ocupación volumen %", compute="_compute_occupancy")
+    occupancy_max_pct = fields.Float(string="Ocupación total %", compute="_compute_occupancy")
 
     @api.depends("line_ids")
     def _compute_line_count(self):
@@ -66,8 +70,9 @@ class PurchaseTransportGroup(models.Model):
     @api.depends("total_weight_kg", "total_volume_m3", "capacity_weight_kg", "capacity_volume_m3")
     def _compute_occupancy(self):
         for rec in self:
-            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg * 100.0) if rec.capacity_weight_kg else 0.0
-            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3 * 100.0) if rec.capacity_volume_m3 else 0.0
+            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg) if rec.capacity_weight_kg else 0.0
+            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3) if rec.capacity_volume_m3 else 0.0
+            rec.occupancy_max_pct = max(rec.occupancy_weight_pct, rec.occupancy_volume_pct)
 
     @api.onchange("transport_type_id")
     def _onchange_transport_type_id(self):
