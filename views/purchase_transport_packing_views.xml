@@ -25,6 +25,9 @@
                 <field name="name"/>
                 <field name="max_weight_kg"/>
                 <field name="max_volume_m3"/>
+                <field name="ref_length_cm"/>
+                <field name="ref_width_cm"/>
+                <field name="ref_height_cm"/>
                 <field name="active"/>
             </tree>
         </field>

@@ -10,13 +10,18 @@ class PurchaseTransportPackingType(models.Model):
     name = fields.Char(required=True)
     max_weight_kg = fields.Float(string="Peso máximo (kg)")
     max_volume_m3 = fields.Float(string="Volumen máximo (m³)")
+    ref_length_cm = fields.Float(string="Largo referencia (cm)")
+    ref_width_cm = fields.Float(string="Ancho referencia (cm)")
+    ref_height_cm = fields.Float(string="Alto referencia (cm)")
     active = fields.Boolean(default=True)
 
-    @api.constrains("max_weight_kg", "max_volume_m3")
+    @api.constrains("max_weight_kg", "max_volume_m3", "ref_length_cm", "ref_width_cm", "ref_height_cm")
     def _check_positive_capacity(self):
         for rec in self:
             if rec.max_weight_kg < 0 or rec.max_volume_m3 < 0:
                 raise ValidationError(_("Las capacidades no pueden ser negativas."))
+            if rec.ref_length_cm < 0 or rec.ref_width_cm < 0 or rec.ref_height_cm < 0:
+                raise ValidationError(_("Las dimensiones de referencia no pueden ser negativas."))
 
 
 class PurchaseTransportPackingLine(models.Model):
