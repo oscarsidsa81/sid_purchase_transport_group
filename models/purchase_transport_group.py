@@ -44,35 +44,48 @@ class PurchaseTransportGroup(models.Model):
             rec.line_count = len(rec.line_ids)
 
     @api.depends(
-        "line_ids.purchase_order_id",
-        "line_ids.purchase_order_id.partner_id",
-        "line_ids.purchase_line_id",
-        "line_ids.qty_assigned",
-        "line_ids.line_state",
+        "packing_line_ids.purchase_order_id",
+        "packing_line_ids.purchase_order_id.partner_id",
+        "packing_line_ids.description",
+        "packing_line_ids.package_count",
+        "packing_line_ids.weight_kg",
+        "packing_line_ids.volume_m3",
     )
     def _compute_note_summary(self):
         for group in self:
             supplier_map = OrderedDict()
-            for line in group.line_ids.filtered(lambda l: l.line_state != "cancel"):
+            for line in group.packing_line_ids:
                 po = line.purchase_order_id
+                if not po:
+                    continue
                 supplier = po.partner_id
                 contact = po.partner_id.child_ids.filtered(lambda c: c.type == "delivery")[:1] or po.partner_id
                 key = (supplier.id, contact.id)
                 supplier_map.setdefault(key, {
                     "supplier_name": supplier.display_name or _("Sin proveedor"),
                     "address": contact.contact_address or _("Sin dirección"),
-                    "pl_map": OrderedDict(),
+                    "packing_map": OrderedDict(),
                 })
-                pl_name = line.purchase_line_id.display_name or line.name or _("Sin PL")
-                supplier_map[key]["pl_map"].setdefault(pl_name, 0.0)
-                supplier_map[key]["pl_map"][pl_name] += line.qty_assigned
+                po_name = po.name or _("Sin pedido")
+                supplier_map[key]["packing_map"].setdefault(po_name, [])
+                supplier_map[key]["packing_map"][po_name].append(
+                    "%s | %s | %s bultos | %.2f kg | %.3f m³" % (
+                        line.description or _("Sin descripción"),
+                        _("PO %s") % po_name,
+                        line.package_count,
+                        line.weight_kg,
+                        line.volume_m3,
+                    )
+                )
             blocks = []
             for info in supplier_map.values():
                 blocks.append(info["supplier_name"])
                 blocks.append(_("- Dirección recogida: %s") % info["address"])
-                blocks.append(_("- Resumen PL asociados:"))
-                for pl_name, qty in info["pl_map"].items():
-                    blocks.append("  • %s: %s" % (pl_name, qty))
+                blocks.append(_("- Resumen packing list asociado:"))
+                for po_name, pack_lines in info["packing_map"].items():
+                    blocks.append("  • %s" % po_name)
+                    for pack_line in pack_lines:
+                        blocks.append("    - %s" % pack_line)
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
 
