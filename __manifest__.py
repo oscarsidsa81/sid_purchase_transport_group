@@ -1,5 +1,6 @@
 {
-    "name": "Purchase Transport Group",
+    "name": "sid_purchase_transport_batch",
+    "summary": "Módulo para gestión de transportes",
     "version": "15.0.5.0.0",
     "summary": "Agrupa lineas de compra para transporte y genera RFQ de transporte",
     "category": "Purchases",
