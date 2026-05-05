@@ -21,6 +21,15 @@ class PurchaseTransportGroup(models.Model):
     line_ids = fields.One2many("purchase.transport.group.line", "group_id", string="Líneas", copy=True)
     line_count = fields.Integer(string="Nº líneas", compute="_compute_line_count")
     note_summary = fields.Text(string="Resumen", compute="_compute_note_summary", store=True)
+    packing_line_ids = fields.One2many("purchase.transport.packing.line", "group_id", string="Packing list")
+    packing_count = fields.Integer(string="Nº packings", compute="_compute_packing_totals")
+    total_weight_kg = fields.Float(string="Peso total (kg)", compute="_compute_packing_totals", store=True)
+    total_volume_m3 = fields.Float(string="Volumen total (m³)", compute="_compute_packing_totals", store=True)
+    transport_type_id = fields.Many2one("purchase.transport.packing.type", string="Tipo transporte")
+    capacity_weight_kg = fields.Float(string="Capacidad peso (kg)")
+    capacity_volume_m3 = fields.Float(string="Capacidad volumen (m³)")
+    occupancy_weight_pct = fields.Float(string="Ocupación peso %", compute="_compute_occupancy")
+    occupancy_volume_pct = fields.Float(string="Ocupación volumen %", compute="_compute_occupancy")
 
     @api.depends("line_ids")
     def _compute_line_count(self):
@@ -45,6 +54,27 @@ class PurchaseTransportGroup(models.Model):
                         blocks.append("- %s: %s" % (desc, qty))
                 blocks.append("")
             group.note_summary = "\n".join(blocks).strip()
+
+
+    @api.depends("packing_line_ids.weight_kg", "packing_line_ids.volume_m3")
+    def _compute_packing_totals(self):
+        for rec in self:
+            rec.packing_count = len(rec.packing_line_ids)
+            rec.total_weight_kg = sum(rec.packing_line_ids.mapped("weight_kg"))
+            rec.total_volume_m3 = sum(rec.packing_line_ids.mapped("volume_m3"))
+
+    @api.depends("total_weight_kg", "total_volume_m3", "capacity_weight_kg", "capacity_volume_m3")
+    def _compute_occupancy(self):
+        for rec in self:
+            rec.occupancy_weight_pct = (rec.total_weight_kg / rec.capacity_weight_kg * 100.0) if rec.capacity_weight_kg else 0.0
+            rec.occupancy_volume_pct = (rec.total_volume_m3 / rec.capacity_volume_m3 * 100.0) if rec.capacity_volume_m3 else 0.0
+
+    @api.onchange("transport_type_id")
+    def _onchange_transport_type_id(self):
+        for rec in self:
+            if rec.transport_type_id:
+                rec.capacity_weight_kg = rec.transport_type_id.max_weight_kg
+                rec.capacity_volume_m3 = rec.transport_type_id.max_volume_m3
 
     @api.model
     def create(self, vals):
@@ -104,7 +134,7 @@ class PurchaseTransportGroup(models.Model):
         po = self.env["purchase.order"].create({
             "partner_id": supplier.id,
             "company_id": self.company_id.id,
-            "notes": self.note_summary or "",
+            "notes": self._prepare_transport_rfq_notes(),
             "origin": self.name,
             "order_line": [(0, 0, {
                 "product_id": product.id,
@@ -117,6 +147,23 @@ class PurchaseTransportGroup(models.Model):
         })
         self.transport_purchase_id = po.id
         return self.action_view_transport_purchase()
+
+
+    def _prepare_transport_rfq_notes(self):
+        self.ensure_one()
+        lines = [self.note_summary or "", "", _("PACKING LIST"), _("Peso total: %.2f kg") % self.total_weight_kg, _("Volumen total: %.3f m³") % self.total_volume_m3]
+        for pack in self.packing_line_ids:
+            lines.append(_("- %s | PO: %s | Bultos: %s | Peso: %.2f kg | Volumen: %.3f m³") % (
+                pack.description, pack.purchase_order_id.name, pack.package_count, pack.weight_kg, pack.volume_m3
+            ))
+        return "\n".join([l for l in lines if l is not False])
+
+    def action_view_packing_lines(self):
+        self.ensure_one()
+        action = self.env.ref("sid_purchase_transport_group.action_purchase_transport_packing_line").read()[0]
+        action["domain"] = [("group_id", "=", self.id)]
+        action["context"] = {"default_group_id": self.id}
+        return action
 
 
 class PurchaseTransportGroupLine(models.Model):

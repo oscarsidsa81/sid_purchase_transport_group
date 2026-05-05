@@ -11,10 +11,12 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
+        "report/purchase_transport_group_report.xml",
         "views/purchase_transport_group_views.xml",
         "views/purchase_order_line_views.xml",
         "views/res_config_settings_views.xml",
-        "views/purchase_transport_group_wizard_views.xml"
+        "views/purchase_transport_group_wizard_views.xml",
+        "views/purchase_transport_packing_views.xml"
     ],
     "installable": True,
     "application": False
