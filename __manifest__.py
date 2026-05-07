@@ -6,7 +6,7 @@
     "category": "Purchases",
     "author": "OpenAI",
     "license": "LGPL-3",
-    "depends": ["purchase", "stock", "mail"],
+    "depends": ["purchase", "stock", "mail", "sale"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
@@ -17,6 +17,7 @@
         "views/res_config_settings_views.xml",
         "views/purchase_transport_group_wizard_views.xml",
         "views/purchase_transport_packing_views.xml",
+        "views/sale_order_views.xml",
         "report/purchase_transport_group_report.xml"
     ],
     "installable": True,
