@@ -26,8 +26,9 @@
                     <button name="action_done" type="object" string="Finalizar" states="draft,active"/>
                     <button name="action_reset_draft" type="object" string="Volver a borrador" states="active,done,cancel"/>
                     <button name="action_cancel" type="object" string="Cancelar" states="draft,active,done"/>
-                    <button name="action_create_transport_purchase" type="object" string="Generar RFQ transporte" states="draft,active,done" class="oe_highlight"/>
-                    <button name="action_view_transport_purchase" type="object" string="Ver RFQ transporte" attrs="{'invisible': [('transport_purchase_id', '=', False)]}"/>
+                    <button name="action_create_transport_purchase" type="object" string="Generar RFQs transporte" states="draft,active,done" class="oe_highlight"/>
+                    <button name="action_view_transport_purchase" type="object" string="Ver compra adjudicada" attrs="{'invisible': [('transport_purchase_id', '=', False)]}"/>
+                    <button name="action_award_transport_rfq" type="object" string="Adjudicar mejor oferta" attrs="{'invisible': [('transport_rfq_count', '=', 0)]}"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,done,cancel"/>
                 </header>
                 <sheet>
@@ -43,6 +44,9 @@
                         </button>
                         <button type="object" name="action_view_packing_lines" class="oe_stat_button" icon="fa-cubes">
                             <field name="packing_count" string="Packings" widget="statinfo"/>
+                        </button>
+                        <button type="object" name="action_view_transport_rfqs" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="transport_rfq_count" string="RFQs" widget="statinfo"/>
                         </button>
                     </div>
                     <group>

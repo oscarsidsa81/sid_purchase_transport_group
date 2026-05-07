@@ -4,6 +4,9 @@ from odoo import api, fields, models
 class PurchaseOrderLine(models.Model):
     _inherit = "purchase.order.line"
 
+    transport_group_id = fields.Many2one("purchase.transport.group", string="Agrupación transporte", index=True)
+    sale_order_id = fields.Many2one("sale.order", string="Pedido de venta", index=True)
+    sale_order_line_id = fields.Many2one("sale.order.line", string="Línea de venta", index=True)
     transport_group_line_ids = fields.One2many(
         "purchase.transport.group.line",
         "purchase_line_id",
