@@ -1,0 +1,17 @@
+<odoo>
+    <record id="view_sale_order_form_transport_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form.transport.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object" name="action_view_transport_purchases" class="oe_stat_button" icon="fa-truck">
+                    <field name="transport_purchase_count" string="Compras transporte" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='client_order_ref']" position="after">
+                <field name="transport_cost_total" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
