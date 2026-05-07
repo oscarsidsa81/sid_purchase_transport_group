@@ -27,8 +27,6 @@
                     <button name="action_reset_draft" type="object" string="Volver a borrador" states="active,done,cancel"/>
                     <button name="action_cancel" type="object" string="Cancelar" states="draft,active,done"/>
                     <button name="action_create_transport_purchase" type="object" string="Generar RFQs transporte" states="draft,active,done" class="oe_highlight"/>
-                    <button name="action_view_transport_purchase" type="object" string="Ver compra adjudicada" attrs="{'invisible': [('transport_purchase_id', '=', False)]}"/>
-                    <button name="action_award_transport_rfq" type="object" string="Adjudicar mejor oferta" attrs="{'invisible': [('transport_rfq_count', '=', 0)]}"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,done,cancel"/>
                 </header>
                 <sheet>
@@ -54,6 +52,7 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="carrier_partner_id"/>
                             <field name="transport_purchase_id" readonly="1"/>
+                            <field name="awarded_purchase_id" domain="[('id','in',transport_rfq_ids)]"/>
                             <field name="transport_type_id"/>
                             <field name="capacity_weight_kg"/>
                             <field name="capacity_volume_m3"/>

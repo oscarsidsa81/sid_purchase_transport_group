@@ -20,7 +20,7 @@ class PurchaseTransportGroup(models.Model):
     transport_purchase_id = fields.Many2one("purchase.order", string="RFQ transporte", copy=False, readonly=True, tracking=True)
     transport_rfq_ids = fields.Many2many("purchase.order", string="RFQs transporte", copy=False, readonly=True)
     transport_rfq_count = fields.Integer(string="Nº RFQs", compute="_compute_transport_rfq_count")
-    awarded_purchase_id = fields.Many2one("purchase.order", string="Compra adjudicada", copy=False, readonly=True, tracking=True)
+    awarded_purchase_id = fields.Many2one("purchase.order", string="Compra adjudicada", copy=False, tracking=True)
     line_ids = fields.One2many("purchase.transport.group.line", "group_id", string="Líneas", copy=True)
     line_count = fields.Integer(string="Nº líneas", compute="_compute_line_count")
     note_summary = fields.Text(string="Resumen", compute="_compute_note_summary", store=True)
@@ -100,10 +100,17 @@ class PurchaseTransportGroup(models.Model):
 
 
 
-    @api.depends("line_ids.purchase_order_id")
+    @api.depends("line_ids.purchase_order_id", "packing_line_ids.purchase_order_id", "company_id")
     def _compute_available_purchase_order_ids(self):
+        PurchaseOrder = self.env["purchase.order"]
         for rec in self:
-            rec.available_purchase_order_ids = rec.line_ids.mapped("purchase_order_id")
+            purchase_orders = rec.line_ids.mapped("purchase_order_id") | rec.packing_line_ids.mapped("purchase_order_id")
+            if not purchase_orders:
+                purchase_orders = PurchaseOrder.search([
+                    ("company_id", "=", rec.company_id.id),
+                    ("state", "in", ["draft", "sent", "to approve", "purchase"]),
+                ])
+            rec.available_purchase_order_ids = purchase_orders
 
     @api.depends("packing_line_ids.weight_kg", "packing_line_ids.volume_m3")
     def _compute_packing_totals(self):
@@ -173,9 +180,6 @@ class PurchaseTransportGroup(models.Model):
 
     def action_create_transport_purchase(self):
         self.ensure_one()
-        if self.transport_rfq_ids:
-            return self.action_view_transport_rfqs()
-
         icp = self.env["ir.config_parameter"].sudo()
         product_id = int(icp.get_param("sid_purchase_transport_group.transport_service_product_id") or 0)
         supplier_id = int(icp.get_param("sid_purchase_transport_group.transport_supplier_id") or 0)
