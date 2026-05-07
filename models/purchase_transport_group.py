@@ -18,6 +18,9 @@ class PurchaseTransportGroup(models.Model):
     company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, tracking=True)
     carrier_partner_id = fields.Many2one("res.partner", string="Transportista", domain=[("supplier_rank", ">", 0)], tracking=True)
     transport_purchase_id = fields.Many2one("purchase.order", string="RFQ transporte", copy=False, readonly=True, tracking=True)
+    transport_rfq_ids = fields.Many2many("purchase.order", string="RFQs transporte", copy=False, readonly=True)
+    transport_rfq_count = fields.Integer(string="Nº RFQs", compute="_compute_transport_rfq_count")
+    awarded_purchase_id = fields.Many2one("purchase.order", string="Compra adjudicada", copy=False, tracking=True)
     line_ids = fields.One2many("purchase.transport.group.line", "group_id", string="Líneas", copy=True)
     line_count = fields.Integer(string="Nº líneas", compute="_compute_line_count")
     note_summary = fields.Text(string="Resumen", compute="_compute_note_summary", store=True)
@@ -37,6 +40,12 @@ class PurchaseTransportGroup(models.Model):
     occupancy_weight_pct = fields.Float(string="Ocupación peso %", compute="_compute_occupancy")
     occupancy_volume_pct = fields.Float(string="Ocupación volumen %", compute="_compute_occupancy")
     occupancy_max_pct = fields.Float(string="Ocupación total %", compute="_compute_occupancy")
+
+
+    @api.depends("transport_rfq_ids")
+    def _compute_transport_rfq_count(self):
+        for rec in self:
+            rec.transport_rfq_count = len(rec.transport_rfq_ids)
 
     @api.depends("line_ids")
     def _compute_line_count(self):
@@ -91,10 +100,17 @@ class PurchaseTransportGroup(models.Model):
 
 
 
-    @api.depends("line_ids.purchase_order_id")
+    @api.depends("line_ids.purchase_order_id", "packing_line_ids.purchase_order_id", "company_id")
     def _compute_available_purchase_order_ids(self):
+        PurchaseOrder = self.env["purchase.order"]
         for rec in self:
-            rec.available_purchase_order_ids = rec.line_ids.mapped("purchase_order_id")
+            purchase_orders = rec.line_ids.mapped("purchase_order_id") | rec.packing_line_ids.mapped("purchase_order_id")
+            if not purchase_orders:
+                purchase_orders = PurchaseOrder.search([
+                    ("company_id", "=", rec.company_id.id),
+                    ("state", "in", ["draft", "sent", "to approve", "purchase"]),
+                ])
+            rec.available_purchase_order_ids = purchase_orders
 
     @api.depends("packing_line_ids.weight_kg", "packing_line_ids.volume_m3")
     def _compute_packing_totals(self):
@@ -137,16 +153,23 @@ class PurchaseTransportGroup(models.Model):
 
     def action_view_transport_purchase(self):
         self.ensure_one()
-        if not self.transport_purchase_id:
-            raise UserError(_("La agrupación no tiene RFQ de transporte."))
+        purchase = self.awarded_purchase_id or self.transport_purchase_id
+        if not purchase:
+            raise UserError(_("La agrupación no tiene compra de transporte."))
         return {
             "type": "ir.actions.act_window",
-            "name": _("RFQ transporte"),
+            "name": _("Compra transporte"),
             "res_model": "purchase.order",
             "view_mode": "form",
-            "res_id": self.transport_purchase_id.id,
+            "res_id": purchase.id,
             "target": "current",
         }
+
+    def action_view_transport_rfqs(self):
+        self.ensure_one()
+        action = self.env.ref("purchase.purchase_rfq").read()[0]
+        action["domain"] = [("id", "in", self.transport_rfq_ids.ids)]
+        return action
 
     def action_view_lines(self):
         self.ensure_one()
@@ -157,37 +180,41 @@ class PurchaseTransportGroup(models.Model):
 
     def action_create_transport_purchase(self):
         self.ensure_one()
-        if self.transport_purchase_id:
-            return self.action_view_transport_purchase()
-
         icp = self.env["ir.config_parameter"].sudo()
         product_id = int(icp.get_param("sid_purchase_transport_group.transport_service_product_id") or 0)
         supplier_id = int(icp.get_param("sid_purchase_transport_group.transport_supplier_id") or 0)
 
         if not product_id:
             raise UserError(_("Configura el producto de transporte en Ajustes de Compras."))
-        if not supplier_id:
-            raise UserError(_("Configura el proveedor de transporte por defecto en Ajustes de Compras."))
 
         product = self.env["product.product"].browse(product_id)
-        supplier = self.env["res.partner"].browse(supplier_id)
+        carrier = self.carrier_partner_id
+        if not carrier and supplier_id:
+            carrier = self.env["res.partner"].browse(supplier_id)
+        if not carrier:
+            raise UserError(_("Indica un transportista en la agrupación o en la configuración por defecto."))
 
         po = self.env["purchase.order"].create({
-            "partner_id": supplier.id,
-            "company_id": self.company_id.id,
-            "notes": self._prepare_transport_rfq_notes(),
-            "origin": self.name,
-            "order_line": [(0, 0, {
-                "product_id": product.id,
-                "name": _("Transporte agrupación %s") % self.name,
-                "product_qty": 1.0,
-                "product_uom": product.uom_po_id.id or product.uom_id.id,
-                "price_unit": 0.0,
-                "date_planned": fields.Datetime.now(),
-            })],
-        })
+                "partner_id": carrier.id,
+                "company_id": self.company_id.id,
+                "notes": self._prepare_transport_rfq_notes(),
+                "origin": self.name,
+                "order_line": [(0, 0, {
+                    "product_id": product.id,
+                    "name": _("Transporte agrupación %s") % self.name,
+                    "product_qty": 1.0,
+                    "product_uom": product.uom_po_id.id or product.uom_id.id,
+                    "price_unit": 0.0,
+                    "date_planned": fields.Datetime.now(),
+                    "transport_group_id": self.id,
+                })],
+            })
+
+        self.transport_rfq_ids = [(4, po.id)]
         self.transport_purchase_id = po.id
-        return self.action_view_transport_purchase()
+        if not self.awarded_purchase_id:
+            self.awarded_purchase_id = po.id
+        return self.action_view_transport_rfqs()
 
 
     def _prepare_transport_rfq_notes(self):
