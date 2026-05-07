@@ -188,13 +188,15 @@ class PurchaseTransportGroup(models.Model):
             raise UserError(_("Configura el producto de transporte en Ajustes de Compras."))
 
         product = self.env["product.product"].browse(product_id)
-        carrier = self.carrier_partner_id
-        if not carrier and supplier_id:
-            carrier = self.env["res.partner"].browse(supplier_id)
-        if not carrier:
-            raise UserError(_("Indica un transportista en la agrupación o en la configuración por defecto."))
+        carriers = self.carrier_partner_id
+        if not carriers and supplier_id:
+            carriers = self.env["res.partner"].browse(supplier_id)
+        if not carriers:
+            raise UserError(_("Indica al menos un transportista en la agrupación o en la configuración por defecto."))
 
-        po = self.env["purchase.order"].create({
+        created_rfqs = self.env["purchase.order"]
+        for carrier in carriers:
+            po = self.env["purchase.order"].create({
                 "partner_id": carrier.id,
                 "company_id": self.company_id.id,
                 "notes": self._prepare_transport_rfq_notes(),
@@ -209,12 +211,20 @@ class PurchaseTransportGroup(models.Model):
                     "transport_group_id": self.id,
                 })],
             })
+            created_rfqs |= po
 
-        self.transport_rfq_ids = [(4, po.id)]
-        self.transport_purchase_id = po.id
-        if not self.awarded_purchase_id:
-            self.awarded_purchase_id = po.id
+        self.transport_rfq_ids = [(6, 0, created_rfqs.ids)]
+        self.transport_purchase_id = created_rfqs[:1].id
         return self.action_view_transport_rfqs()
+
+    def action_award_transport_rfq(self):
+        self.ensure_one()
+        if not self.transport_rfq_ids:
+            raise UserError(_("No hay RFQs para adjudicar."))
+        awarded = self.transport_rfq_ids.sorted(key=lambda p: p.amount_total)[:1]
+        self.awarded_purchase_id = awarded.id
+        self.transport_purchase_id = awarded.id
+        return self.action_view_transport_purchase()
 
 
     def _prepare_transport_rfq_notes(self):
