@@ -52,6 +52,7 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="carrier_partner_id"/>
                             <field name="transport_purchase_id" readonly="1"/>
+                            <field name="transport_rfq_ids" invisible="1"/>
                             <field name="awarded_purchase_id" domain="[('id','in',transport_rfq_ids)]"/>
                             <field name="transport_type_id"/>
                             <field name="capacity_weight_kg"/>
